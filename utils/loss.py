@@ -97,7 +97,7 @@ class ComputeLoss:
         h = model.hyp  # hyperparameters
 
         # Define criteria
-        BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
+        BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], reduction='none', device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
@@ -147,7 +147,10 @@ class ComputeLoss:
                 if self.nc > 1:  # cls loss (only if multiple classes)
                     t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
                     t[range(n), tcls[i]] = self.cp
-                    lcls += self.BCEcls(ps[:, 5:], t)  # BCE
+                    lcls_unreduced = self.BCEcls(ps[:, 5:], t) # BCE
+                    lcls_unreduced = torch.mean(lcls_unreduced, dim=1)
+                    lcls_unreduced *= torch.logical_not(torch.any(t[:, 5] == self.cp, dim=1, keepdim=True)) # zero out loss for Unsure class
+                    lcls += torch.mean(lcls_unreduced)
 
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
