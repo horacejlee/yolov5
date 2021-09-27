@@ -149,7 +149,7 @@ class ComputeLoss:
                     t[range(n), tcls[i]] = self.cp
                     lcls_unreduced = self.BCEcls(ps[:, 5:], t) # BCE
                     lcls_unreduced = torch.mean(lcls_unreduced, dim=1)
-                    lcls_unreduced *= torch.logical_not(torch.any(t[:, 5] == self.cp, dim=1, keepdim=True)) # zero out loss for Unsure class
+                    lcls_unreduced *= torch.logical_not(torch.any(t[:, 5] == self.cp, dim=0, keepdim=True)) # zero out loss for Unsure class
                     lcls += torch.mean(lcls_unreduced)
 
                 # Append targets to text file
